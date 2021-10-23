@@ -1,0 +1,35 @@
+# Chris Cheney, cjc1294@rit.edu
+# Date written: 09/29/21
+#
+# Requires SSH keys in a sshKeys folder and sshd_config file in the same directory as the playbook
+# Also requires installation of the ansible.posix package
+#     Install with ansible-galaxy collection install ansible.posix
+# Configure user to install ssh keys on with the target_user variable
+
+
+- name: Set up SSH from base install
+  hosts: all
+  vars:
+    target_user: user  # Target user here
+
+  tasks:
+  - name: Copy ssh keys
+    ansible.posix.authorized_key:
+      user: "{{ target_user }}"
+      state: present
+      key: "{{ lookup('file', '{{ item }}') }}" # Get contents of files listed
+    with_fileglob:
+      - sshKeys/*
+    become: yes
+
+  - name: Set up ssh config
+    copy:
+      src: sshd_config
+      dest: /etc/ssh/sshd_config
+    become: yes
+
+  - name: Restart sshd
+    service:
+      name: sshd
+      state: restarted
+    become: yes
